@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NETFLOX · Witch Hat Atelier</title>
+  <link rel="icon" type="image/x-icon" href="netflox.png">
+  <style>
+    :root {
+      --bg: #141414;
+      --red: #E50914;
+      --text: #E5E5E5;
+      --muted: #a3a3a3;
+      --panel: rgba(20,20,20,.94);
+      --nav-h: 68px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      overflow-x: hidden;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+
+    /* Navigation */
+    .nav {
+      position: fixed;
+      inset: 0 0 auto 0;
+      height: var(--nav-h);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      padding: 0 4%;
+      background: linear-gradient(to bottom, rgba(0,0,0,.78), transparent);
+      transition: background .3s ease, box-shadow .3s ease;
+    }
+    .nav.scrolled {
+      background: rgba(0,0,0,.97);
+      box-shadow: 0 2px 18px rgba(0,0,0,.35);
+    }
+    .logo {
+      color: var(--red);
+      font-size: 1.7rem;
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      text-decoration: none;
+      white-space: nowrap;
+      text-shadow: 0 2px 10px rgba(229,9,20,.18);
+    }
+    .nav-links {
+      display: flex;
+      gap: 22px;
+      align-items: center;
+      font-size: .92rem;
+    }
+    .nav-links button {
+      background: none;
+      border: 0;
+      color: #ddd;
+      padding: 8px 0;
+      transition: color .2s ease;
+    }
+    .nav-links button:hover,
+    .nav-links button.active { color: white; font-weight: 700; }
+
+    .nav-spacer { flex: 1; }
+    .search {
+      width: 180px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      background: transparent;
+      transition: width .25s ease, border-color .25s ease, background .25s ease;
+    }
+    .search:focus-within {
+      width: 250px;
+      border-color: #aaa;
+      background: #000;
+    }
+    .search span { color: #eee; font-size: 1.1rem; }
+    .search input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: white;
+      padding: 8px 0;
+    }
+    .search input::placeholder { color: #bbb; }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border: 0;
+      border-radius: 4px;
+      background: linear-gradient(135deg, #7b1fa2, #e53935);
+      color: white;
+      font-weight: 800;
+      box-shadow: 0 3px 10px rgba(0,0,0,.35);
+    }
+
+    /* Hero */
+    .hero {
+      min-height: 78vh;
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: calc(var(--nav-h) + 4vh) 4% 10vh;
+      background:
+        linear-gradient(to right, rgba(20,20,20,.93) 0%, rgba(20,20,20,.65) 34%, rgba(20,20,20,.1) 72%),
+        linear-gradient(to top, #141414 0%, rgba(20,20,20,.1) 30%, transparent 65%),
+        url("https://m.media-amazon.com/images/S/pv-target-images/bf8ea6cdb41985e5741fc52ef348b5803e30ce291f0adf047ff5ffa4440d642d.jpg")
+        center/cover no-repeat;
+    }
+    .hero-content { max-width: 620px; margin-top: 7vh; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #fff;
+      font-size: .82rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      margin-bottom: 12px;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 4px;
+      height: 17px;
+      background: var(--red);
+      display: inline-block;
+      border-radius: 2px;
+    }
+    .hero h1 {
+      margin: 0 0 12px;
+      color: white;
+      font-size: clamp(2.6rem, 6vw, 5.4rem);
+      line-height: .95;
+      letter-spacing: -2px;
+      font-weight: 900;
+    }
+    .hero-meta {
+      display: flex;
+      gap: 13px;
+      align-items: center;
+      color: #ddd;
+      font-size: .95rem;
+      margin-bottom: 15px;
+    }
+    .match { color: #46d369; font-weight: 800; }
+    .hero p {
+      color: #eee;
+      line-height: 1.55;
+      font-size: 1.02rem;
+      max-width: 570px;
+      margin: 0 0 22px;
+      text-shadow: 0 2px 10px rgba(0,0,0,.7);
+    }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn {
+      border: 0;
+      border-radius: 4px;
+      padding: 11px 22px;
+      font-weight: 800;
+      display: inline-flex;
+      gap: 9px;
+      align-items: center;
+      transition: transform .18s ease, background .18s ease, filter .18s ease;
+    }
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.12); }
+    .btn-primary { background: white; color: #111; }
+    .btn-secondary { background: rgba(109,109,110,.7); color: white; }
+
+    /* Rows */
+    main { position: relative; z-index: 2; margin-top: -7vh; }
+    .row-section {
+      padding: 0 4% 30px;
+      scroll-margin-top: 80px;
+    }
+    .row-title {
+      margin: 0 0 12px;
+      font-size: 1.45rem;
+      color: white;
+      font-weight: 800;
+    }
+    .row-wrap { position: relative; }
+    .row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 10px 2px 22px;
+      scrollbar-width: none;
+      scroll-behavior: smooth;
+    }
+    .row::-webkit-scrollbar { display: none; }
+
+    .card {
+      position: relative;
+      flex: 0 0 clamp(220px, 22vw, 330px);
+      aspect-ratio: 16 / 9;
+      border-radius: 5px;
+      overflow: hidden;
+      background: #242424;
+      transition: transform .25s ease, box-shadow .25s ease;
+      cursor: pointer;
+    }
+    .card:hover {
+      transform: scale(1.05);
+      z-index: 10;
+      box-shadow: 0 12px 35px rgba(0,0,0,.7);
+    }
+    .card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: filter .25s ease;
+    }
+    .card:hover img { filter: brightness(.75); }
+    .card-gradient {
+      position: absolute;
+      inset: 30% 0 0;
+      background: linear-gradient(to top, rgba(0,0,0,.88), transparent);
+      opacity: 0;
+      transition: opacity .25s ease;
+    }
+    .card:hover .card-gradient { opacity: 1; }
+    .card-info {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 10px;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity .25s ease, transform .25s ease;
+    }
+    .card:hover .card-info { opacity: 1; transform: translateY(0); }
+    .card-title {
+      color: white;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+    .card-meta {
+      display: flex;
+      gap: 8px;
+      color: #ddd;
+      font-size: .75rem;
+    }
+    .arrow {
+      position: absolute;
+      top: 0;
+      bottom: 22px;
+      width: 46px;
+      border: 0;
+      color: white;
+      background: rgba(0,0,0,.4);
+      font-size: 2rem;
+      z-index: 20;
+      opacity: 0;
+      transition: opacity .2s ease, background .2s ease;
+    }
+    .row-wrap:hover .arrow { opacity: 1; }
+    .arrow:hover { background: rgba(0,0,0,.72); }
+    .arrow.left { left: -4%; }
+    .arrow.right { right: -4%; }
+
+    .empty {
+      color: #888;
+      padding: 35px 0;
+      text-align: center;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 3vh 3vw;
+      background: rgba(0,0,0,.88);
+      backdrop-filter: blur(5px);
+    }
+    .modal.open { display: flex; animation: fadeIn .18s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal-shell {
+      width: min(1200px, 96vw);
+      height: min(88vh, 800px);
+      background: #050505;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 20px 80px rgba(0,0,0,.8);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .close {
+      position: absolute;
+      right: 14px;
+      top: 12px;
+      z-index: 5;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 0;
+      color: white;
+      background: rgba(0,0,0,.72);
+      font-size: 1.2rem;
+    }
+    .close:hover { background: rgba(80,80,80,.85); }
+    .player {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .player video,
+    .player iframe {
+      position: absolute !important;
+      inset: 0 !important;
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      min-width: 100% !important;
+      min-height: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      transform: none !important;
+      z-index: 1 !important;
+      background: #000;
+    }
+    .modal-info {
+      padding: 18px 22px 20px;
+      background: #111;
+    }
+    .modal-info h2 { margin: 0 0 7px; color: white; }
+    .modal-info p { margin: 0; color: #bbb; line-height: 1.45; }
+
+
+    .mobile-bottom-nav {
+      display: none;
+    }
+    .season-banner {
+      margin: 0 4% 28px;
+      padding: 18px 20px;
+      width: calc(100% - 8%);
+      border-radius: 6px;
+      background: linear-gradient(100deg, #211c28, #171717);
+      border: 1px solid rgba(255,255,255,.08);
+      color: white;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background .18s ease, transform .18s ease;
+    }
+    .season-banner:hover {
+      background: linear-gradient(100deg, #2b2433, #202020);
+      transform: translateY(-1px);
+    }
+    .season-banner span { display: flex; flex-direction: column; gap: 5px; }
+    .season-banner strong { color: white; font-size: 1rem; }
+    .season-banner small { color: #aaa; font-size: .78rem; }
+    .season-banner b { color: #bbb; font-size: 1.8rem; font-weight: 400; }
+
+    @media (max-width: 800px) {
+      body { padding-bottom: 66px; }
+      .nav {
+        height: 56px;
+        background: rgba(0,0,0,.92);
+        padding: 0 14px;
+      }
+      .logo { font-size: 1.3rem; }
+      .nav-links { display: none; }
+      .nav-spacer { display: block; }
+      .search {
+        width: 34px;
+        border: 0;
+        overflow: hidden;
+      }
+      .search:focus-within {
+        position: absolute;
+        left: 14px;
+        right: 14px;
+        width: auto;
+        background: #050505;
+        border: 1px solid #555;
+        padding: 0 10px;
+      }
+      .search input { opacity: 0; width: 0; }
+      .search:focus-within input { opacity: 1; width: 100%; }
+      .avatar { width: 30px; height: 30px; }
+      .hero {
+        min-height: 72vh;
+        padding: 82px 18px 72px;
+        background-position: 62% center;
+      }
+      .hero-content { margin-top: 15vh; }
+      .hero h1 {
+        font-size: clamp(2.3rem, 12vw, 4rem);
+        letter-spacing: -1.5px;
+      }
+      .hero p { max-width: 95%; font-size: .92rem; }
+      .hero-meta { font-size: .78rem; gap: 9px; }
+      main { margin-top: -5vh; }
+      .row-section { padding: 0 14px 24px; }
+      .row-title { font-size: 1.2rem; }
+      .card {
+        flex-basis: 74vw;
+        border-radius: 4px;
+      }
+      .card-info {
+        opacity: 1;
+        transform: none;
+        bottom: 8px;
+      }
+      .card-gradient { opacity: 1; }
+      .arrow { display: none; }
+      .season-banner {
+        width: calc(100% - 28px);
+        margin: 0 14px 20px;
+        padding: 14px;
+      }
+      .season-banner strong { font-size: .88rem; }
+      .season-banner small { font-size: .7rem; }
+      .mobile-bottom-nav {
+        position: fixed;
+        display: flex;
+        align-items: stretch;
+        justify-content: space-around;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 64px;
+        z-index: 200;
+        background: rgba(8,8,8,.97);
+        border-top: 1px solid rgba(255,255,255,.08);
+        backdrop-filter: blur(12px);
+      }
+      .mobile-bottom-nav button {
+        flex: 1;
+        border: 0;
+        background: transparent;
+        color: #8e8e8e;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 3px;
+      }
+      .mobile-bottom-nav button span { font-size: 1.15rem; }
+      .mobile-bottom-nav button small { font-size: .62rem; white-space: nowrap; }
+      .mobile-bottom-nav button.mobile-active,
+      .mobile-bottom-nav button:hover { color: white; }
+      .mobile-bottom-nav button.mobile-active span { color: #E50914; }
+    }
+
+
+
+    .season-page-head { align-items: center; }
+    .season-poster {
+      width: 150px;
+      min-width: 150px;
+      aspect-ratio: 2 / 3;
+      border-radius: 5px;
+      overflow: hidden;
+      box-shadow: 0 12px 35px rgba(0,0,0,.55);
+    }
+    .season-poster img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    @media (max-width: 700px) {
+      .season-poster {
+        width: 120px;
+        min-width: 120px;
+      }
+    }
+
+
+    .season-selector-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 16px;
+    }
+    .season-selector-row label {
+      color: #aaa;
+      font-size: .82rem;
+    }
+    .season-selector-row select {
+      appearance: none;
+      border: 1px solid #666;
+      border-radius: 3px;
+      background: #181818;
+      color: white;
+      padding: 8px 34px 8px 11px;
+      font-weight: 700;
+      cursor: pointer;
+      background-image: linear-gradient(45deg, transparent 50%, #aaa 50%),
+                        linear-gradient(135deg, #aaa 50%, transparent 50%);
+      background-position: calc(100% - 15px) 13px, calc(100% - 10px) 13px;
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+    }
+
+    .season-page {
+      display: none;
+      min-height: 100vh;
+      padding: calc(var(--nav-h) + 45px) 4% 70px;
+      background:
+        radial-gradient(circle at 75% 10%, rgba(229,9,20,.12), transparent 35%),
+        #141414;
+    }
+    .season-page.visible { display: block; animation: fadeIn .22s ease; }
+    .season-page-inner { max-width: 1200px; margin: 0 auto; }
+    .back-home {
+      border: 0;
+      background: transparent;
+      color: #bbb;
+      padding: 6px 0 22px;
+      font-size: .95rem;
+    }
+    .back-home:hover { color: white; }
+    .season-page-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 22px;
+    }
+    .season-page-head h2 {
+      color: white;
+      font-size: clamp(2.4rem, 5vw, 4.2rem);
+      margin: 4px 0 12px;
+      letter-spacing: -2px;
+    }
+    .season-page-meta {
+      display: flex;
+      gap: 12px;
+      color: #bbb;
+      font-size: .9rem;
+      flex-wrap: wrap;
+    }
+    .season-page-description {
+      color: #bbb;
+      max-width: 720px;
+      line-height: 1.55;
+      margin: 20px 0 28px;
+    }
+    .episode-list {
+      display: grid;
+      gap: 1px;
+      background: #333;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .episode-item {
+      display: grid;
+      grid-template-columns: 190px 1fr auto;
+      gap: 20px;
+      align-items: center;
+      padding: 15px;
+      background: #181818;
+      transition: background .18s ease;
+      cursor: pointer;
+    }
+    .episode-item:hover { background: #242424; }
+    .episode-thumb {
+      width: 190px;
+      aspect-ratio: 16/9;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #222;
+    }
+    .episode-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .episode-number { color: #999; font-size: .8rem; margin-bottom: 4px; }
+    .episode-title { color: white; font-weight: 800; margin-bottom: 6px; }
+    .episode-desc { color: #999; line-height: 1.4; font-size: .85rem; }
+    .episode-date { color: #777; font-size: .75rem; white-space: nowrap; }
+    @media (max-width: 700px) {
+  
+    .season-page-head { align-items: center; }
+    .season-poster {
+      width: 150px;
+      min-width: 150px;
+      aspect-ratio: 2 / 3;
+      border-radius: 5px;
+      overflow: hidden;
+      box-shadow: 0 12px 35px rgba(0,0,0,.55);
+    }
+    .season-poster img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    @media (max-width: 700px) {
+      .season-poster {
+        width: 120px;
+        min-width: 120px;
+      }
+    }
+
+
+    .season-selector-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 16px;
+    }
+    .season-selector-row label {
+      color: #aaa;
+      font-size: .82rem;
+    }
+    .season-selector-row select {
+      appearance: none;
+      border: 1px solid #666;
+      border-radius: 3px;
+      background: #181818;
+      color: white;
+      padding: 8px 34px 8px 11px;
+      font-weight: 700;
+      cursor: pointer;
+      background-image: linear-gradient(45deg, transparent 50%, #aaa 50%),
+                        linear-gradient(135deg, #aaa 50%, transparent 50%);
+      background-position: calc(100% - 15px) 13px, calc(100% - 10px) 13px;
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+    }
+
+    .season-page { padding: 75px 14px 80px; }
+      .season-page-head { align-items: flex-start; flex-direction: column; }
+      .season-page-head h2 { font-size: 2.35rem; }
+      .season-page-head .btn { width: 100%; justify-content: center; }
+      .episode-item {
+        grid-template-columns: 105px 1fr;
+        gap: 12px;
+        padding: 10px;
+      }
+      .episode-thumb { width: 105px; }
+      .episode-date { display: none; }
+      .episode-desc { display: none; }
+      .episode-title { font-size: .9rem; }
+      .episode-number { font-size: .7rem; }
+    }
+
+
+    .site-footer {
+      padding: 35px 4% 90px;
+      color: #666;
+      font-size: .7rem;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    .site-footer a { color: #888; }
+    .site-footer a:hover { color: white; }
+
+
+
+    .player-spoiler.click-through {
+      background: #000;
+      z-index: 20;
+      pointer-events: none !important;
+    }
+    .player-spoiler.click-through .spoiler-card {
+      pointer-events: none;
+    }
+
+    /* Netflix-style More Info overlay */
+    .info-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      overflow-y: auto;
+      padding: 3vh 3vw;
+      background: rgba(0,0,0,.82);
+      backdrop-filter: blur(5px);
+    }
+    .info-modal.open {
+      display: flex;
+      animation: fadeIn .18s ease;
+    }
+    .info-shell {
+      position: relative;
+      width: min(1050px, 94vw);
+      margin: auto;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #181818;
+      box-shadow: 0 25px 90px rgba(0,0,0,.8);
+    }
+    .info-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 5;
+      width: 38px;
+      height: 38px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(0,0,0,.75);
+      color: white;
+      font-size: 1.1rem;
+    }
+    .info-close:hover { background: #333; }
+    .info-hero-art {
+      height: min(48vw, 510px);
+      position: relative;
+      background: #111;
+    }
+    .info-hero-art img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      object-position: center;
+    }
+    .info-art-gradient {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to top, #181818 0%, rgba(24,24,24,.55) 23%, transparent 60%),
+        linear-gradient(to right, rgba(0,0,0,.25), transparent 65%);
+    }
+    .info-body {
+      padding: 0 42px 42px;
+      margin-top: -70px;
+      position: relative;
+      z-index: 2;
+    }
+    .info-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 20px;
+    }
+    .info-heading h2 {
+      margin: 0 0 10px;
+      color: white;
+      font-size: clamp(2rem, 5vw, 3.8rem);
+      letter-spacing: -1.5px;
+    }
+    .info-meta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: #bbb;
+      font-size: .85rem;
+    }
+    .info-play { white-space: nowrap; }
+    .info-columns {
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(200px, .8fr);
+      gap: 45px;
+      margin-top: 25px;
+    }
+    .info-columns p {
+      color: #ddd;
+      line-height: 1.6;
+      margin: 0;
+    }
+    .info-details {
+      color: #999;
+      font-size: .82rem;
+      line-height: 1.9;
+    }
+    .info-details strong { color: #ddd; }
+    .info-episodes {
+      margin-top: 34px;
+      border-top: 1px solid #333;
+      padding-top: 22px;
+    }
+    .info-episodes-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .info-episodes-head h3 {
+      color: white;
+      margin: 0;
+      font-size: 1.25rem;
+    }
+    .info-episodes-head span { color: #888; font-size: .8rem; }
+    .info-episode-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .info-ep {
+      border: 0;
+      padding: 0;
+      overflow: hidden;
+      text-align: left;
+      background: #222;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform .18s ease, background .18s ease;
+    }
+    .info-ep:hover {
+      transform: translateY(-3px);
+      background: #2b2b2b;
+    }
+    .info-ep img {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      display: block;
+    }
+    .info-ep-text {
+      padding: 8px 9px 10px;
+    }
+    .info-ep-num { color: #888; font-size: .68rem; }
+    .info-ep-title {
+      color: white;
+      font-size: .76rem;
+      font-weight: 700;
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @media (max-width: 700px) {
+      .info-modal { padding: 0; }
+      .info-shell {
+        width: 100%;
+        min-height: 100vh;
+        margin: 0;
+        border-radius: 0;
+      }
+      .info-hero-art { height: 58vh; }
+      .info-body {
+        padding: 0 18px 90px;
+        margin-top: -45px;
+      }
+      .info-heading {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .info-heading h2 { font-size: 2.25rem; }
+      .info-play { width: 100%; justify-content: center; }
+      .info-columns {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+      .info-episode-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 800px) {
+      :root { --nav-h: 58px; }
+      .nav { gap: 13px; padding: 0 4%; }
+      .nav-links { display: none; }
+      .search { width: 145px; }
+      .search:focus-within { width: 180px; }
+      .hero { min-height: 70vh; padding-left: 5%; padding-right: 5%; }
+      .hero-content { margin-top: 9vh; }
+      .hero h1 { font-size: clamp(2.5rem, 13vw, 4.5rem); }
+      .row-section { padding-left: 5%; padding-right: 5%; }
+      .card { flex-basis: 68vw; }
+      .arrow { display: none; }
+      .modal { padding: 0; }
+      .modal-shell { width: 100vw; height: 100vh; border-radius: 0; }
+    }
+
+    @media (max-width: 480px) {
+      .logo { font-size: 1.35rem; }
+      .search { width: 120px; }
+      .avatar { width: 31px; height: 31px; }
+      .hero { min-height: 72vh; }
+      .hero p { font-size: .95rem; }
+      .btn { padding: 10px 16px; }
+    }
+  
+    .season-banner-button {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: calc(100% - 8%);
+      margin: 0 4% 28px;
+      padding: 18px 20px;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 6px;
+      background: linear-gradient(100deg,#211c28,#171717);
+      color: #fff;
+      text-align: left;
+      cursor: pointer;
+    }
+    .season-banner-button span { display:flex; flex-direction:column; gap:5px; }
+    .season-banner-button strong { color:#fff; }
+    .season-banner-button small { color:#aaa; }
+    .season-banner-button b { font-size:1.8rem; font-weight:400; color:#bbb; }
+
+
+    .season-banner-button {
+      display:flex !important;
+      align-items:center !important;
+      justify-content:space-between !important;
+      box-sizing:border-box !important;
+      width:calc(100% - 8%) !important;
+      margin:0 4% 28px !important;
+      padding:18px 20px !important;
+      border:1px solid rgba(255,255,255,.08) !important;
+      border-radius:6px !important;
+      background:linear-gradient(100deg,#211c28,#171717) !important;
+      color:#fff !important;
+      text-align:left !important;
+      cursor:pointer !important;
+    }
+    .season-banner-button span {display:flex !important; flex-direction:column !important; gap:5px !important;}
+    .season-banner-button strong {color:#fff !important;}
+    .season-banner-button small {color:#aaa !important;}
+    .season-banner-button b {font-size:1.8rem !important; font-weight:400 !important; color:#bbb !important;}
+
+.season-banner-button{display:flex!important;align-items:center!important;justify-content:space-between!important;width:calc(100% - 8%)!important;margin:0 4% 28px!important;padding:18px 20px!important;box-sizing:border-box!important}
+
+    #homeSeasonRowSection { margin-top: 0; }
+    #homeSeasonRowSection .row-title {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    #homeSeasonRowSection .row-count {
+      color: #777;
+      font-size: .75rem;
+      font-weight: 500;
+    }
+    /*
+     * Authoritative #player / spoiler styling (previously duplicated
+     * across several overlapping !important blocks — consolidated here).
+     * The spoiler captures its own clicks/taps and hides only when the
+     * user clicks it — a deliberate reveal. This works because every
+     * episode now uses autoPlay=1&muted=1 in its embed URL, so playback
+     * itself starts on its own underneath, on both desktop and mobile,
+     * regardless of whether/when the spoiler is clicked.
+     */
+    #player {
+      position: relative !important;
+      width: 100% !important;
+      aspect-ratio: 16 / 9 !important;
+      overflow: hidden !important;
+      isolation: isolate !important;
+      background: #000 !important;
+    }
+
+    #player > iframe,
+    #player > video {
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
+      border: 0 !important;
+      z-index: 1 !important;
+      background: #000 !important;
+    }
+
+    #player > .player-spoiler {
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-sizing: border-box !important;
+      z-index: 99999 !important;
+      background: #000 !important;
+      pointer-events: auto !important;
+      cursor: pointer !important;
+    }
+
+    #player > .player-spoiler .spoiler-card {
+      position: static !important;
+      margin: 0 !important;
+      transform: none !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      text-align: center !important;
+      pointer-events: none !important;
+    }
+
+    #player > .player-spoiler.hidden {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+    }
+
+</style>
+</head>
+<body>
+
+  <header class="nav" id="nav">
+    <a href="#" class="logo">NETFLOX</a>
+
+    <nav class="nav-links" aria-label="Main navigation">
+      <button class="active" data-target="home">Home</button>
+    </nav>
+
+    <div class="nav-spacer"></div>
+
+    <label class="search" aria-label="Search videos">
+      <span>⌕</span>
+      <input id="searchInput" type="search" placeholder="Titles, people..." autocomplete="off" />
+    </label>
+
+    <button class="avatar" title="Profile">M</button>
+  </header>
+
+  <section class="hero" id="home">
+    <div class="hero-content">
+      <div class="eyebrow">NETFLOX ANIME · SEASON 1 COMPLETE</div>
+      <h1 id="heroTitle">Witch Hat Atelier</h1>
+      <div class="hero-meta">
+        <span class="match" id="heroMatch">99% Match</span>
+        <span id="heroDuration">1 Season</span>
+        <span id="heroRating">HD</span>
+      </div>
+      <p id="heroDescription">Coco discovers the secret behind magic and begins her journey as an apprentice witch.</p>
+      <div class="actions">
+        <button class="btn btn-primary" id="heroPlay">▶ Play</button>
+        <button class="btn btn-secondary" id="heroInfo">ⓘ More Info</button>
+      </div>
+    </div>
+  </section>
+  <main id="content">
+    <button class="season-banner season-banner-button" id="homeSeasonButton" type="button">
+      <span>
+        <strong>Witch Hat Atelier · Season 1</strong>
+        <small>13 episodes · Complete Season</small>
+      </span>
+      <b>›</b>
+    </button>
+    <section class="row-section" id="homeSeasonRowSection">
+      <h2 class="row-title">Season 1 <span class="row-count">13 Episodes</span></h2>
+      <div class="row-wrap">
+        <button class="arrow left" id="homeSeasonLeft" aria-label="Scroll left">‹</button>
+        <div class="row" id="seasonRow"></div>
+        <button class="arrow right" id="homeSeasonRight" aria-label="Scroll right">›</button>
+      </div>
+    </section>
+  </main>
+    <section class="season-page" id="season-page" aria-label="Season 1">
+      <div class="season-page-inner">
+        <button class="back-home" id="backHome">‹ Back to Home</button>
+        <div class="season-page-head">
+          <div class="season-poster"><img src="https://www.anime-atelier.com/content/images/size/w1600/2025/10/kv_2.jpg" alt="Witch Hat Atelier Season 1 key visual"></div>
+          <div>
+            <div class="eyebrow">NETFLOX ANIME · COMPLETE SERIES</div>
+            <h2>Witch Hat Atelier</h2>
+            <div class="season-page-meta"><span class="match">98% Match</span><span>2026</span><span>1 Season</span><span>HD</span></div>
+          </div>
+          <button class="btn btn-primary" id="seasonPlay">▶ Play Season</button>
+        </div>
+        <p class="season-page-description">Follow Coco and her fellow apprentices through a world where magic is beautiful, dangerous, and governed by secrets.</p>
+        <div class="season-selector-row">
+          <label for="seasonSelect">Season</label>
+          <select id="seasonSelect" aria-label="Select season">
+            <option value="1">Season 1</option>
+          </select>
+        </div>
+        <div class="episode-list" id="episodeList"></div>
+      </div>
+    </section>
+  <div class="mobile-bottom-nav" aria-label="Mobile navigation">
+    <button class="mobile-active" data-target="home"><span>⌂</span><small>Home</small></button>
+    <button data-target="season-1"><span>▣</span><small>Season 1</small></button>
+  </div>
+
+  <div class="modal" id="videoModal" role="dialog" aria-modal="true" aria-label="Video player">
+    <div class="modal-shell">
+      <button class="close" id="closeModal" aria-label="Close">✕</button>
+      <div class="player" id="player"></div>
+      <div class="modal-info">
+        <h2 id="modalTitle"></h2>
+        <p id="modalDescription"></p>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="info-modal" id="infoModal" role="dialog" aria-modal="true" aria-label="Title information">
+    <div class="info-shell">
+      <button class="info-close" id="closeInfo" aria-label="Close">✕</button>
+      <div class="info-hero-art">
+        <img id="infoHeroImage" src="https://www.anime-atelier.com/content/images/size/w1600/2025/10/kv_2.jpg" alt="Witch Hat Atelier" onerror="this.onerror=null;this.src='https://icv2.com/images/article_thumbs/650x650_180f003b145690ad63d63150101a5f85e7bda6641d49edf16143963d.jpg';">
+        <div class="info-art-gradient"></div>
+      </div>
+      <div class="info-body">
+        <div class="info-heading">
+          <div>
+            <h2 id="infoTitle">Witch Hat Atelier</h2>
+            <div class="info-meta">
+              <span class="match">98% Match</span>
+              <span>2026</span>
+              <span>1 Season</span>
+              <span>HD</span>
+              <span>Fantasy</span>
+            </div>
+          </div>
+          <button class="btn btn-primary info-play" id="infoPlay">▶ Play</button>
+        </div>
+        <div class="info-columns">
+          <div>
+            <p id="infoDescription"></p>
+          </div>
+          <div class="info-details">
+            <div><strong>Genre:</strong> Fantasy, Adventure, Drama</div>
+            <div><strong>Episodes:</strong> 13</div>
+            <div><strong>Season:</strong> Season 1</div>
+            <div><strong>Format:</strong> TV Series</div>
+          </div>
+        </div>
+        <div class="info-episodes">
+          <div class="info-episodes-head">
+            <h3>Season 1</h3>
+            <span>13 Episodes</span>
+          </div>
+          <div class="info-episode-grid" id="infoEpisodeGrid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /*
+      ==============================
+      GFFLIX CONTENT DATABASE
+      Edit this array to add/change videos.
+      videoUrl accepts:
+        1. Direct HTML5 video URL (.mp4, .webm, etc.)
+        2. Google Drive preview URL
+        3. EchoVideo or MyVidPlay iframe/embed URLs (use the player page URL, not its temporary blob: URL)
+      ==============================
+    */
+    const videos = [
+      {
+        id: "ep-1",
+        title: "Episode 1 · The Magic That Started Everything",
+        category: "Season 1",
+        description: "Coco discovers the secret behind magic and begins an extraordinary journey.",
+        matchScore: "98% Match",
+        duration: "23m",
+        rating: "HD",
+        airdate: "Apr 6, 2026",
+        thumbnail: "https://images.squarespace-cdn.com/content/v1/56cdc4478259b5c112bb2285/1779329258967-R149ZNIDRBQICOOPJCJ7/ep01_PR_still_6_R%2B%281%29.jpg",
+        videoUrl: "https://myvidplay.com/e/r9qn52f0ztx6?v=1&asi=0&autoPlay=1&ao=0&autostart=true&muted=1"
+      },
+      {
+        id: "ep-2",
+        title: "Episode 2 · The School of the Grassland",
+        category: "Season 1",
+        description: "Coco meets fellow apprentices and begins learning the fundamentals of magic.",
+        matchScore: "98% Match",
+        duration: "23m",
+        rating: "HD",
+        airdate: "Apr 6, 2026",
+        thumbnail: "https://animeblog-media.nyc3.digitaloceanspaces.com/2026/04/Witch-Hat-Atelier-Ep-2-img-12.png",
+        videoUrl: "https://myvidplay.com/e/cf1y302qyal3?v=1&asi=0&autoPlay=1&ao=0&autostart=true&muted=1"
+      },
+      {
+        id: "ep-3",
+        title: "Episode 3 · The Dadah Range Test",
+        category: "Season 1",
+        description: "Coco faces a dangerous initiation test at the Dadah Range.",
+        matchScore: "98% Match",
+        duration: "23m",
+        rating: "HD",
+        airdate: "Apr 13, 2026",
+        thumbnail: "https://i.imgur.com/yrq1LVl.png",
+        videoUrl: "https://myvidplay.com/e/y4a72uz9vis8?v=1&asi=0&autoPlay=1&ao=0&autostart=true&muted=1"
+      },
+      {
+        id: "ep-4",
+        title: "Episode 4 · Meetings in Kalhn",
+        category: "Season 1",
+        description: "The apprentices visit the magical city of Kalhn, where danger is waiting.",
+        matchScore: "98% Match",
+        duration: "23m",
+        rating: "HD",
+        airdate: "Apr 20, 2026",
+        thumbnail: "https://images.everyeye.it/img-notizie/l-anime-fantasy-crunchyroll-rivale-seinen-frieren-v3-871400.jpg",
+        videoUrl: "https://myvidplay.com/e/f7ajwp3g3x7i?v=1&asi=0&autoPlay=1&ao=0&autostart=true&muted=1"
+      },
+      {
+        id: "ep-5",
+        title: "Episode 5 · The Dragon's Labyrinth",
+        category: "Season 1",
+        description: "The four apprentices search for a way out of their calamitous situation.",
+        matchScore: "98% Match",
+        duration: "23m",
+        rating: "HD",
+        airdate: "Apr 27, 2026",
+        thumbnail: "https://animeblog-media.nyc3.digitaloceanspaces.com/2026/04/Witch-Hat-Atelier-Ep-5-img-1.png",
+        videoUrl: "https://myvidplay.com/e/x79g22j6lqg0?v=1&asi=0&autoPlay=1&ao=0&autostart=true&muted=1"
+      },
+      {
+        id: "ep-6",
+        title: "Episode 6 · A Light on a Rainy Day",
+        category: "Season 1",
+        description: "A rainy-day outing brings the apprentices face-to-face with a Watchful Eye.",
+        matchScore: "98% Match",
+        duration: "23m",
+        rating: "HD",
+        airdate: "May 4, 2026",
+        thumbnail: "https://i.imgur.com/NfaxMWL.png",
+        videoUrl: "https://myvidplay.com/e/gp2xgtmueyos?v=1&asi=0&autoPlay=1&ao=0&autostart=true&muted=1"
+      },
+      {
+        id: "ep-7",
+        title: "Episode 7 · Who Is Magic For?",
+        category: "Season 1",
+        description: "The apprentices are permitted to join a dangerous rescue mission.",
+        matchScore: "98% Match",
+        duration: "23m",
+        rating: "HD",
+        airdate: "May 11, 2026",
+        thumbnail: "https://animeblog-media.nyc3.digitaloceanspaces.com/2026/05/Witch-Hat-Atelier-Ep-7-img-5.png",
+        videoUrl: "https://myvidplay.com/e/r23f1kyr61w8?v=1&asi=0&autoPlay=1&ao=0&autostart=true&muted=1"
+      },
+      {
+        id: "ep-8",
+        title: "Episode 8 · The Misgivings of the Knights Moralis",
+        category: "Season 1",
+        description: "The arrival of the Knights Moralis forces Coco and Agott to face consequences.",
+        matchScore: "98% Match",
+        duration: "23m",
+        rating: "HD",
+        airdate: "May 18, 2026",
+        thumbnail: "https://i.imgur.com/Q0xVRbJ.png",
+        videoUrl: "https://myvidplay.com/e/88swlkt5emdw?v=1&asi=0&autoPlay=1&ao=0&autostart=true&muted=1"
+      },
+      {
+        id: "ep-9",
+        title: "Episode 9 · A Nightmare Stained in Black",
+        category: "Season 1",
+        description: "Nightmares trouble Coco while Qifrey searches for the Brimmed Caps.",
+        matchScore: "98% Match",
+        duration: "23m",
+        rating: "HD",
+        airdate: "May 25, 2026",
+        thumbnail: "https://i.blogs.es/898019/witch-hat-atelier/840_560.jpeg",
+        videoUrl: "https://myvidplay.com/e/0gl5efezlw55?v=1&asi=0&autoPlay=1&ao=0&autostart=true&muted=1"
+      },
+      {
+        id: "ep-10",
+        title: "Episode 10 · A Promise in Silver",
+        category: "Season 1",
+        description: "Tarta tries to help Coco while dealing with his own difficulties.",
+        matchScore: "98% Match",
+        duration: "23m",
+        rating: "HD",
+        airdate: "Jun 1, 2026",
+        thumbnail: "https://a.storyblok.com/f/178900/960x540/8fb77d58b5/witch-hat-atelier-episode-10.jpg/m/filters%3Aquality%2895%29format%28webp%29",
+        videoUrl: "https://myvidplay.com/e/rctnpvymtve5?v=1&asi=0&autoPlay=1&ao=0&autostart=true&muted=1"
+      },
+      {
+        id: "ep-11",
+        title: "Episode 11 · The Test in Serpentback Cave",
+        category: "Season 1",
+        description: "Agott prepares for her next exam while tensions rise around Qifrey.",
+        matchScore: "98% Match",
+        duration: "23m",
+        rating: "HD",
+        airdate: "Jun 8, 2026",
+        thumbnail: "https://a.storyblok.com/f/178900/960x540/caae6529e6/witch-hat-atelier-episode-11.jpg/m/filters%3Aquality%2895%29format%28webp%29",
+        videoUrl: "https://myvidplay.com/e/bjqjau78avhy?v=1&asi=0&autoPlay=1&ao=0&autostart=true&muted=1"
+      },
+      {
+        id: "ep-12",
+        title: "Episode 12 · The Shadow of Romonon",
+        category: "Season 1",
+        description: "Coco's dreams of becoming a witch move closer to reality as secrets surface.",
+        matchScore: "98% Match",
+        duration: "23m",
+        rating: "HD",
+        airdate: "Jun 15, 2026",
+        thumbnail: "https://a.storyblok.com/f/178900/960x540/083c42b049/witch-hat-atelier-episode-12.jpg/m/filters%3Aquality%2895%29format%28webp%29",
+        videoUrl: "https://myvidplay.com/e/ph3ohg0w5z4k?v=1&asi=0&autoPlay=1&ao=0&autostart=true&muted=1"
+      },
+      {
+        id: "ep-13",
+        title: "Episode 13 · Forbidden Magic",
+        category: "Season 1",
+        description: "Agott, Richeh, and Euini face a terrifying Brimmed Cap witch in Serpentback Cave.",
+        matchScore: "98% Match",
+        duration: "23m",
+        rating: "HD",
+        airdate: "Jun 22, 2026",
+        thumbnail: "https://a.storyblok.com/f/178900/960x540/8fc7a62919/witch-hat-atelier-episode-13.jpg/m/filters%3Aquality%2895%29format%28webp%29",
+        videoUrl: "https://myvidplay.com/e/15mp6gv32mb8?v=1&asi=0&autoPlay=1&ao=0&autostart=true&muted=1"
+      }
+    ];
+
+    const categoryOrder = ["Season 1"];
+
+    const content = document.getElementById("content");
+    const searchInput = document.getElementById("searchInput");
+    const modal = document.getElementById("videoModal");
+    const player = document.getElementById("player");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalDescription = document.getElementById("modalDescription");
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      }[c]));
+    }
+
+    function isEmbedUrl(url) {
+      return /^https?:\/\//i.test(url) && (
+        /drive\.google\.com\/file\/d\/[^/]+\/preview/i.test(url) ||
+        /play\.echovideo\.ru\/embed-/i.test(url) ||
+        /myvidplay\.com\/e\//i.test(url)
+      );
+    }
+
+    function renderRows(filter = "") {
+      const query = filter.trim().toLowerCase();
+      const filtered = videos.filter(v =>
+        !query ||
+        v.title.toLowerCase().includes(query) ||
+        v.description.toLowerCase().includes(query)
+      );
+
+      const row = document.getElementById("seasonRow");
+      if (!row) return;
+
+      row.innerHTML = filtered.map(video => `
+        <article class="card" data-id="${escapeHtml(video.id)}" tabindex="0" aria-label="Play ${escapeHtml(video.title)}">
+          <div class="card-media">
+            <img src="${escapeHtml(video.thumbnail)}" alt="${escapeHtml(video.title)}" loading="lazy"
+                 onerror="this.onerror=null; this.src='${escapeHtml(video.thumbnail)}';">
+            <div class="card-gradient"></div>
+            <div class="card-info">
+              <strong>${escapeHtml(video.title)}</strong>
+              <div>
+                <span class="match">${escapeHtml(video.matchScore)}</span>
+                <span>${escapeHtml(video.duration)}</span>
+                <span>${escapeHtml(video.rating)}</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      `).join("");
+
+      row.querySelectorAll(".card").forEach(card => {
+        const open = () => {
+          const video = videos.find(v => v.id === card.dataset.id);
+          if (video) openVideo(video);
+        };
+        card.addEventListener("click", open);
+        card.addEventListener("keydown", e => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            open();
+          }
+        });
+      });
+    }
+
+    function renderEpisodePage() {
+      const list = document.getElementById("episodeList");
+      list.innerHTML = videos.map((video, index) => `
+        <article class="episode-item" data-id="${escapeHtml(video.id)}" tabindex="0">
+          <div class="episode-thumb">
+            <img src="${escapeHtml(video.thumbnail)}" alt="${escapeHtml(video.title)}" loading="lazy"
+             onerror="this.onerror=null; this.src='https://www.anime-atelier.com/content/images/size/w1600/2025/10/kv_2.jpg';">
+          </div>
+          <div>
+            <div class="episode-number">EPISODE ${index + 1}</div>
+            <div class="episode-title">${escapeHtml(video.title.replace(/^Episode \d+ · /, ""))}</div>
+            <div class="episode-desc">${escapeHtml(video.description)}</div>
+          </div>
+          <div class="episode-date">${escapeHtml(video.airdate || "")}</div>
+        </article>
+      `).join("");
+
+      list.querySelectorAll(".episode-item").forEach(item => {
+        const open = () => {
+          const video = videos.find(v => v.id === item.dataset.id);
+          if (video) openVideo(video);
+        };
+        item.addEventListener("click", open);
+        item.addEventListener("keydown", e => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            open();
+          }
+        });
+      });
+    }
+
+    function openVideo(video) {
+      player.innerHTML = "";
+
+      if (isEmbedUrl(video.videoUrl)) {
+        const iframe = document.createElement("iframe");
+        iframe.src = video.videoUrl;
+        iframe.title = video.title;
+        iframe.loading = "eager";
+        iframe.allowFullscreen = true;
+        iframe.setAttribute(
+          "allow",
+          "autoplay; fullscreen; picture-in-picture; encrypted-media"
+        );
+        iframe.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+        player.appendChild(iframe);
+
+        const spoiler = document.createElement("div");
+        spoiler.className = "player-spoiler";
+        spoiler.innerHTML = `
+          <div class="spoiler-card">
+            <div class="spoiler-icon">▶</div>
+            <strong>Witch Hat Atelier</strong>
+            <span>Click to play</span>
+          </div>
+        `;
+
+        /*
+         * Every episode URL now sets autoPlay=1&muted=1, so the video
+         * starts on its own (muted) as soon as the iframe loads —
+         * muted autoplay is allowed unconditionally by every browser,
+         * desktop and mobile. Because playback no longer depends on a
+         * click reaching the iframe, the spoiler can now safely capture
+         * its own clicks/taps directly (pointer-events: auto) and only
+         * hide when the user actually clicks it — a deliberate reveal,
+         * not an automatic one.
+         */
+        spoiler.style.pointerEvents = "auto";
+        spoiler.addEventListener(
+          "click",
+          () => spoiler.classList.add("hidden"),
+          { once: true }
+        );
+
+        player.appendChild(spoiler);
+      } else {
+        const videoEl = document.createElement("video");
+        videoEl.src = video.videoUrl;
+        videoEl.controls = true;
+        videoEl.autoplay = true;
+        videoEl.playsInline = true;
+        videoEl.preload = "metadata";
+        player.appendChild(videoEl);
+        videoEl.play().catch(() => {});
+      }
+
+      modalTitle.textContent = "Witch Hat Atelier";
+      modalDescription.textContent =
+        `Season 1 · ${video.title.replace(/^Episode \d+ · /, "")}`;
+      modal.classList.add("open");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeVideo() {
+      const videoEl = player.querySelector("video");
+      if (videoEl) {
+        videoEl.pause();
+        videoEl.currentTime = 0;
+      }
+      player.innerHTML = "";
+      modal.classList.remove("open");
+      document.body.style.overflow = "";
+    }
+
+    document.getElementById("closeModal").addEventListener("click", closeVideo);
+    modal.addEventListener("click", e => {
+      if (e.target === modal) closeVideo();
+    });
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && modal.classList.contains("open")) closeVideo();
+      if (e.key === "Escape" && infoModal.classList.contains("open")) closeInfo();
+    });
+
+        document.getElementById("heroPlay").addEventListener("click", () => openVideo(videos[0]));
+
+
+
+    searchInput.addEventListener("input", e => renderRows(e.target.value));
+
+
+
+    window.addEventListener("scroll", () => {
+      document.getElementById("nav").classList.toggle("scrolled", window.scrollY > 40);
+    }, { passive: true });
+
+    // Horizontal mouse-wheel support without stealing normal vertical page scrolling.
+    document.addEventListener("wheel", e => {
+      const row = e.target.closest(".row");
+      if (!row || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+
+      if (row.scrollWidth > row.clientWidth) {
+        row.scrollLeft += e.deltaY;
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    // Hero metadata is driven from the same JSON object.
+    const hero = videos[0];
+    document.getElementById("heroTitle").textContent = "Witch Hat Atelier";
+    document.getElementById("heroMatch").textContent = "99% Match";
+    document.getElementById("heroDuration").textContent = "1 Season";
+    document.getElementById("heroRating").textContent = "HD";
+    document.getElementById("heroDescription").textContent = hero.description;
+
+
+    function renderEpisodePage() {
+      const list = document.getElementById("episodeList");
+      list.innerHTML = videos.map((video, index) => `
+        <article class="episode-item" data-id="${escapeHtml(video.id)}" tabindex="0">
+          <div class="episode-thumb">
+            <img src="${escapeHtml(video.thumbnail)}" alt="${escapeHtml(video.title)}" loading="lazy"
+             onerror="this.onerror=null; this.src='https://www.anime-atelier.com/content/images/size/w1600/2025/10/kv_2.jpg';">
+          </div>
+          <div>
+            <div class="episode-number">EPISODE ${index + 1}</div>
+            <div class="episode-title">${escapeHtml(video.title.replace(/^Episode \d+ · /, ""))}</div>
+            <div class="episode-desc">${escapeHtml(video.description)}</div>
+          </div>
+          <div class="episode-date">${escapeHtml(video.airdate || "")}</div>
+        </article>
+      `).join("");
+
+      list.querySelectorAll(".episode-item").forEach(item => {
+        const open = () => {
+          const video = videos.find(v => v.id === item.dataset.id);
+          if (video) openVideo(video);
+        };
+        item.addEventListener("click", open);
+        item.addEventListener("keydown", e => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            open();
+          }
+        });
+      });
+    }
+
+
+    function showHome() {
+      document.querySelectorAll(".nav-links button").forEach(b => b.classList.toggle("active", b.dataset.target === "home"));
+      document.querySelectorAll(".mobile-bottom-nav button").forEach(b => b.classList.toggle("mobile-active", b.dataset.target === "home"));
+      document.getElementById("season-page").classList.remove("visible");
+      document.getElementById("home").style.display = "";
+      document.getElementById("content").style.display = "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showSeason() {
+      document.getElementById("home").style.display = "none";
+      document.getElementById("content").style.display = "none";
+      document.getElementById("season-page").classList.add("visible");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    document.getElementById("seasonPlay").addEventListener("click", () => openVideo(videos[0]));
+    document.getElementById("backHome").addEventListener("click", showHome);
+
+    document.querySelectorAll(".nav-links button, .mobile-bottom-nav button").forEach(button => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".nav-links button").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".mobile-bottom-nav button").forEach(b => b.classList.remove("mobile-active"));
+
+        if (button.closest(".nav-links")) button.classList.add("active");
+        if (button.closest(".mobile-bottom-nav")) button.classList.add("mobile-active");
+
+        if (button.dataset.target === "season-1") showSeason();
+        else showHome();
+      });
+    });
+
+
+    const infoModal = document.getElementById("infoModal");
+    const infoHeroImage = document.getElementById("infoHeroImage");
+    const infoDescription = document.getElementById("infoDescription");
+    const infoEpisodeGrid = document.getElementById("infoEpisodeGrid");
+
+    function renderInfoEpisodes() {
+      infoEpisodeGrid.innerHTML = videos.map((video, index) => `
+        <button class="info-ep" data-id="${escapeHtml(video.id)}">
+          <img src="${escapeHtml(video.thumbnail)}" alt="" loading="lazy">
+          <div class="info-ep-text">
+            <div class="info-ep-num">EPISODE ${index + 1}</div>
+            <div class="info-ep-title">${escapeHtml(video.title.replace(/^Episode \d+ · /, ""))}</div>
+          </div>
+        </button>
+      `).join("");
+
+      infoEpisodeGrid.querySelectorAll(".info-ep").forEach(item => {
+        item.addEventListener("click", () => {
+          const video = videos.find(v => v.id === item.dataset.id);
+          if (video) {
+            closeInfo();
+            openVideo(video);
+          }
+        });
+      });
+    }
+
+    function openInfo(video) {
+      infoHeroImage.src = "https://screenanarchy.com/assets_c/2026/05/Witch%20Hat%20Atelier_2x3_2000x3000_KV-thumb-430xauto-104363.jpeg";
+      infoDescription.textContent =
+        "Follow Coco and her fellow apprentices through a world where magic is beautiful, dangerous, and governed by secrets. Witch Hat Atelier follows Coco as she learns that the world of witches is far stranger than she ever imagined.";
+      infoModal.classList.add("open");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeInfo() {
+      infoModal.classList.remove("open");
+      if (!modal.classList.contains("open")) document.body.style.overflow = "";
+    }
+
+    document.getElementById("heroInfo").addEventListener("click", openInfo);
+    document.getElementById("closeInfo").addEventListener("click", closeInfo);
+    document.getElementById("infoPlay").addEventListener("click", () => {
+      closeInfo();
+      openVideo(videos[0]);
+    });
+    infoModal.addEventListener("click", e => {
+      if (e.target === infoModal) closeInfo();
+    });
+
+    renderInfoEpisodes();
+
+    // The Home hero represents the series, never Episode 1.
+    const heroTitleEl = document.getElementById("heroTitle");
+    if (heroTitleEl) heroTitleEl.textContent = "Witch Hat Atelier";
+    const heroMatchEl = document.getElementById("heroMatch");
+    if (heroMatchEl) heroMatchEl.textContent = "99% Match";
+    const heroDurationEl = document.getElementById("heroDuration");
+    if (heroDurationEl) heroDurationEl.textContent = "1 Season";
+    const heroRatingEl = document.getElementById("heroRating");
+    if (heroRatingEl) heroRatingEl.textContent = "HD";
+
+    renderRows();
+
+    document.getElementById("homeSeasonButton").addEventListener("click", showSeason);
+    document.getElementById("homeSeasonLeft").addEventListener("click", () => {
+      document.getElementById("seasonRow").scrollBy({ left: -document.getElementById("seasonRow").clientWidth * .8, behavior: "smooth" });
+    });
+    document.getElementById("homeSeasonRight").addEventListener("click", () => {
+      document.getElementById("seasonRow").scrollBy({ left: document.getElementById("seasonRow").clientWidth * .8, behavior: "smooth" });
+    });
+
+    renderEpisodePage();
+
+    // renderRows() creates the Home Season 1 card dynamically, so bind it after rendering.
+
+  </script>
+
+    <footer class="site-footer">
+      <span>Artwork belongs to the respective Witch Hat Atelier rights holders.</span>
+      <a href="https://tongari-anime.com/en/gallery/" target="_blank" rel="noopener">Official Gallery</a>
+    </footer>
+
+</body>
+</html>
