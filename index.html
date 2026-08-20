@@ -223,7 +223,26 @@
       display: block;
       transition: filter .25s ease;
     }
+    .card-media { position: relative; width: 100%; height: 100%; }
     .card:hover img { filter: brightness(.75); }
+    .watched-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(0,0,0,.75);
+      border: 1px solid rgba(255,255,255,.25);
+      color: #46d369;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .8rem;
+      font-weight: 900;
+      z-index: 3;
+      pointer-events: none;
+    }
     .card-gradient {
       position: absolute;
       inset: 30% 0 0;
@@ -345,8 +364,34 @@
       padding: 18px 22px 20px;
       background: #111;
     }
+    .modal-info-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
     .modal-info h2 { margin: 0 0 7px; color: white; }
     .modal-info p { margin: 0; color: #bbb; line-height: 1.45; }
+    .next-episode-btn {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid rgba(255,255,255,.28);
+      background: rgba(255,255,255,.08);
+      color: white;
+      font-weight: 800;
+      font-size: .85rem;
+      padding: 9px 16px;
+      border-radius: 4px;
+      transition: background .18s ease, transform .18s ease;
+    }
+    .next-episode-btn:hover { background: rgba(255,255,255,.18); transform: translateY(-1px); }
+    .next-episode-arrow { color: var(--red); }
+    @media (max-width: 700px) {
+      .modal-info-head { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .next-episode-btn { align-self: stretch; justify-content: center; }
+    }
 
 
     .mobile-bottom-nav {
@@ -583,6 +628,7 @@
     }
     .episode-item:hover { background: #242424; }
     .episode-thumb {
+      position: relative;
       width: 190px;
       aspect-ratio: 16/9;
       border-radius: 4px;
@@ -590,6 +636,8 @@
       background: #222;
     }
     .episode-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .episode-thumb .watched-badge { top: 6px; right: 6px; width: 20px; height: 20px; font-size: .72rem; }
+
     .episode-number { color: #999; font-size: .8rem; margin-bottom: 4px; }
     .episode-title { color: white; font-weight: 800; margin-bottom: 6px; }
     .episode-desc { color: #999; line-height: 1.4; font-size: .85rem; }
@@ -674,15 +722,6 @@
     .site-footer a:hover { color: white; }
 
 
-
-    .player-spoiler.click-through {
-      background: #000;
-      z-index: 20;
-      pointer-events: none !important;
-    }
-    .player-spoiler.click-through .spoiler-card {
-      pointer-events: none;
-    }
 
     /* Netflix-style More Info overlay */
     .info-modal {
@@ -949,15 +988,6 @@
       font-size: .75rem;
       font-weight: 500;
     }
-    /*
-     * Authoritative #player / spoiler styling (previously duplicated
-     * across several overlapping !important blocks — consolidated here).
-     * The spoiler captures its own clicks/taps and hides only when the
-     * user clicks it — a deliberate reveal. The iframe itself isn't
-     * created until that click happens (see openVideo), so there's
-     * nothing playing behind the spoiler beforehand on either desktop
-     * or mobile.
-     */
     #player {
       position: relative !important;
       width: 100% !important;
@@ -977,41 +1007,6 @@
       border: 0 !important;
       z-index: 1 !important;
       background: #000 !important;
-    }
-
-    #player > .player-spoiler {
-      position: absolute !important;
-      inset: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      box-sizing: border-box !important;
-      z-index: 99999 !important;
-      background: #000 !important;
-      pointer-events: auto !important;
-      cursor: pointer !important;
-    }
-
-    #player > .player-spoiler .spoiler-card {
-      position: static !important;
-      margin: 0 !important;
-      transform: none !important;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: center !important;
-      text-align: center !important;
-      pointer-events: none !important;
-    }
-
-    #player > .player-spoiler.hidden {
-      display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
     }
 
 </style>
@@ -1100,7 +1095,12 @@
       <button class="close" id="closeModal" aria-label="Close">✕</button>
       <div class="player" id="player"></div>
       <div class="modal-info">
-        <h2 id="modalTitle"></h2>
+        <div class="modal-info-head">
+          <h2 id="modalTitle"></h2>
+          <button class="next-episode-btn" id="nextEpisodeBtn" type="button" style="display:none;">
+            Next Episode <span class="next-episode-arrow">▶</span>
+          </button>
+        </div>
         <p id="modalDescription"></p>
       </div>
     </div>
@@ -1328,6 +1328,30 @@
     const player = document.getElementById("player");
     const modalTitle = document.getElementById("modalTitle");
     const modalDescription = document.getElementById("modalDescription");
+    const nextEpisodeBtn = document.getElementById("nextEpisodeBtn");
+    let currentVideoId = null;
+
+    const WATCHED_KEY = "netflox_watched_episode_ids";
+    function getWatchedIds() {
+      try {
+        return new Set(JSON.parse(localStorage.getItem(WATCHED_KEY)) || []);
+      } catch {
+        return new Set();
+      }
+    }
+    function markWatched(id) {
+      const watched = getWatchedIds();
+      if (watched.has(id)) return;
+      watched.add(id);
+      try {
+        localStorage.setItem(WATCHED_KEY, JSON.stringify([...watched]));
+      } catch {}
+    }
+    function getAdjacentVideo(offset) {
+      const idx = videos.findIndex(v => v.id === currentVideoId);
+      if (idx === -1) return null;
+      return videos[idx + offset] || null;
+    }
 
     function escapeHtml(value) {
       return String(value).replace(/[&<>"']/g, c => ({
@@ -1350,6 +1374,7 @@
         v.title.toLowerCase().includes(query) ||
         v.description.toLowerCase().includes(query)
       );
+      const watched = getWatchedIds();
 
       const row = document.getElementById("seasonRow");
       if (!row) return;
@@ -1359,6 +1384,7 @@
           <div class="card-media">
             <img src="${escapeHtml(video.thumbnail)}" alt="${escapeHtml(video.title)}" loading="lazy"
                  onerror="this.onerror=null; this.src='${escapeHtml(video.thumbnail)}';">
+            ${watched.has(video.id) ? '<div class="watched-badge" title="Watched">✓</div>' : ''}
             <div class="card-gradient"></div>
             <div class="card-info">
               <strong>${escapeHtml(video.title)}</strong>
@@ -1387,86 +1413,22 @@
       });
     }
 
-    function renderEpisodePage() {
-      const list = document.getElementById("episodeList");
-      list.innerHTML = videos.map((video, index) => `
-        <article class="episode-item" data-id="${escapeHtml(video.id)}" tabindex="0">
-          <div class="episode-thumb">
-            <img src="${escapeHtml(video.thumbnail)}" alt="${escapeHtml(video.title)}" loading="lazy"
-             onerror="this.onerror=null; this.src='https://www.anime-atelier.com/content/images/size/w1600/2025/10/kv_2.jpg';">
-          </div>
-          <div>
-            <div class="episode-number">EPISODE ${index + 1}</div>
-            <div class="episode-title">${escapeHtml(video.title.replace(/^Episode \d+ · /, ""))}</div>
-            <div class="episode-desc">${escapeHtml(video.description)}</div>
-          </div>
-          <div class="episode-date">${escapeHtml(video.airdate || "")}</div>
-        </article>
-      `).join("");
-
-      list.querySelectorAll(".episode-item").forEach(item => {
-        const open = () => {
-          const video = videos.find(v => v.id === item.dataset.id);
-          if (video) openVideo(video);
-        };
-        item.addEventListener("click", open);
-        item.addEventListener("keydown", e => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            open();
-          }
-        });
-      });
-    }
-
     function openVideo(video) {
       player.innerHTML = "";
+      currentVideoId = video.id;
 
       if (isEmbedUrl(video.videoUrl)) {
-        const spoiler = document.createElement("div");
-        spoiler.className = "player-spoiler";
-        spoiler.innerHTML = `
-          <div class="spoiler-card">
-            <div class="spoiler-icon">▶</div>
-            <strong>Witch Hat Atelier</strong>
-            <span>Click to play</span>
-          </div>
-        `;
-
-        /*
-         * The iframe is intentionally NOT created until the spoiler is
-         * clicked. Loading it eagerly (behind the spoiler, before any
-         * click) only works if the embed host actually honors the
-         * autoPlay/muted query params on every visitor — myvidplay.com
-         * doesn't reliably do that, so the spoiler was just hiding a
-         * frame that was never playing, leaving a black box behind it.
-         * Creating the iframe inside this click handler instead means
-         * the navigation happens as a direct result of a real user
-         * click, which gives the embed the best chance of honoring
-         * autoplay/click-to-play, and it avoids loading video pages
-         * nobody has actually asked to watch yet.
-         */
-        spoiler.style.pointerEvents = "auto";
-        spoiler.addEventListener(
-          "click",
-          () => {
-            const iframe = document.createElement("iframe");
-            iframe.src = video.videoUrl;
-            iframe.title = video.title;
-            iframe.loading = "eager";
-            iframe.allowFullscreen = true;
-            iframe.setAttribute(
-              "allow",
-              "autoplay; fullscreen; picture-in-picture; encrypted-media"
-            );
-            iframe.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
-            player.appendChild(iframe);
-            spoiler.classList.add("hidden");
-          },
-          { once: true }
+        const iframe = document.createElement("iframe");
+        iframe.src = video.videoUrl;
+        iframe.title = video.title;
+        iframe.loading = "eager";
+        iframe.allowFullscreen = true;
+        iframe.setAttribute(
+          "allow",
+          "autoplay; fullscreen; picture-in-picture; encrypted-media"
         );
-
-        player.appendChild(spoiler);
+        iframe.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+        player.appendChild(iframe);
       } else {
         const videoEl = document.createElement("video");
         videoEl.src = video.videoUrl;
@@ -1478,9 +1440,27 @@
         videoEl.play().catch(() => {});
       }
 
+      // Third-party embeds are cross-origin, so there's no way to know when
+      // the video actually finishes — an episode is marked watched as soon
+      // as it's opened, same as clicking play.
+      markWatched(video.id);
+      renderRows(searchInput.value);
+      renderEpisodePage();
+
       modalTitle.textContent = "Witch Hat Atelier";
       modalDescription.textContent =
         `Season 1 · ${video.title.replace(/^Episode \d+ · /, "")}`;
+
+      const next = getAdjacentVideo(1);
+      if (next) {
+        nextEpisodeBtn.innerHTML = `Next Episode <span class="next-episode-arrow">▶</span>`;
+        nextEpisodeBtn.style.display = "inline-flex";
+        nextEpisodeBtn.onclick = () => openVideo(next);
+      } else {
+        nextEpisodeBtn.style.display = "none";
+        nextEpisodeBtn.onclick = null;
+      }
+
       modal.classList.add("open");
       document.body.style.overflow = "hidden";
     }
@@ -1504,6 +1484,18 @@
     document.addEventListener("keydown", e => {
       if (e.key === "Escape" && modal.classList.contains("open")) closeVideo();
       if (e.key === "Escape" && infoModal.classList.contains("open")) closeInfo();
+
+      if (!modal.classList.contains("open")) return;
+      const activeTag = document.activeElement && document.activeElement.tagName;
+      if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
+
+      if (e.key === "ArrowRight") {
+        const next = getAdjacentVideo(1);
+        if (next) { e.preventDefault(); openVideo(next); }
+      } else if (e.key === "ArrowLeft") {
+        const prev = getAdjacentVideo(-1);
+        if (prev) { e.preventDefault(); openVideo(prev); }
+      }
     });
 
         document.getElementById("heroPlay").addEventListener("click", () => openVideo(videos[0]));
@@ -1540,11 +1532,13 @@
 
     function renderEpisodePage() {
       const list = document.getElementById("episodeList");
+      const watched = getWatchedIds();
       list.innerHTML = videos.map((video, index) => `
         <article class="episode-item" data-id="${escapeHtml(video.id)}" tabindex="0">
           <div class="episode-thumb">
             <img src="${escapeHtml(video.thumbnail)}" alt="${escapeHtml(video.title)}" loading="lazy"
              onerror="this.onerror=null; this.src='https://www.anime-atelier.com/content/images/size/w1600/2025/10/kv_2.jpg';">
+            ${watched.has(video.id) ? '<div class="watched-badge" title="Watched">✓</div>' : ''}
           </div>
           <div>
             <div class="episode-number">EPISODE ${index + 1}</div>
