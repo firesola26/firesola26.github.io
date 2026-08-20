@@ -953,10 +953,10 @@
      * Authoritative #player / spoiler styling (previously duplicated
      * across several overlapping !important blocks — consolidated here).
      * The spoiler captures its own clicks/taps and hides only when the
-     * user clicks it — a deliberate reveal. This works because every
-     * episode now uses autoPlay=1&muted=1 in its embed URL, so playback
-     * itself starts on its own underneath, on both desktop and mobile,
-     * regardless of whether/when the spoiler is clicked.
+     * user clicks it — a deliberate reveal. The iframe itself isn't
+     * created until that click happens (see openVideo), so there's
+     * nothing playing behind the spoiler beforehand on either desktop
+     * or mobile.
      */
     #player {
       position: relative !important;
@@ -1423,18 +1423,6 @@
       player.innerHTML = "";
 
       if (isEmbedUrl(video.videoUrl)) {
-        const iframe = document.createElement("iframe");
-        iframe.src = video.videoUrl;
-        iframe.title = video.title;
-        iframe.loading = "eager";
-        iframe.allowFullscreen = true;
-        iframe.setAttribute(
-          "allow",
-          "autoplay; fullscreen; picture-in-picture; encrypted-media"
-        );
-        iframe.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
-        player.appendChild(iframe);
-
         const spoiler = document.createElement("div");
         spoiler.className = "player-spoiler";
         spoiler.innerHTML = `
@@ -1446,19 +1434,35 @@
         `;
 
         /*
-         * Every episode URL now sets autoPlay=1&muted=1, so the video
-         * starts on its own (muted) as soon as the iframe loads —
-         * muted autoplay is allowed unconditionally by every browser,
-         * desktop and mobile. Because playback no longer depends on a
-         * click reaching the iframe, the spoiler can now safely capture
-         * its own clicks/taps directly (pointer-events: auto) and only
-         * hide when the user actually clicks it — a deliberate reveal,
-         * not an automatic one.
+         * The iframe is intentionally NOT created until the spoiler is
+         * clicked. Loading it eagerly (behind the spoiler, before any
+         * click) only works if the embed host actually honors the
+         * autoPlay/muted query params on every visitor — myvidplay.com
+         * doesn't reliably do that, so the spoiler was just hiding a
+         * frame that was never playing, leaving a black box behind it.
+         * Creating the iframe inside this click handler instead means
+         * the navigation happens as a direct result of a real user
+         * click, which gives the embed the best chance of honoring
+         * autoplay/click-to-play, and it avoids loading video pages
+         * nobody has actually asked to watch yet.
          */
         spoiler.style.pointerEvents = "auto";
         spoiler.addEventListener(
           "click",
-          () => spoiler.classList.add("hidden"),
+          () => {
+            const iframe = document.createElement("iframe");
+            iframe.src = video.videoUrl;
+            iframe.title = video.title;
+            iframe.loading = "eager";
+            iframe.allowFullscreen = true;
+            iframe.setAttribute(
+              "allow",
+              "autoplay; fullscreen; picture-in-picture; encrypted-media"
+            );
+            iframe.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+            player.appendChild(iframe);
+            spoiler.classList.add("hidden");
+          },
           { once: true }
         );
 
